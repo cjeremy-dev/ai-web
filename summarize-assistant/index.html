@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>什么是对象存储OSS</title>
+    <!-- 测试页面内容样式 -->
+    <link rel="icon" href="https://img.alicdn.com/tfs/TB1_ZXuNcfpK1RjSZFOXXa6nFXa-32-32.ico" type="image/x-icon" />
+    <link
+            href="//g.alicdn.com/??aliyun/dbl-official-ui/2.0.1/css/index.css,dawn/ace-element/0.0.60/index.css,hmod/ace-grid-layout-2023/0.0.5/index.css"
+            rel="stylesheet"
+    />
+    <link rel="icon" href="https://img.alicdn.com/tfs/TB1_ZXuNcfpK1RjSZFOXXa6nFXa-32-32.ico" type="image/x-icon">
+    <link href="//g.alicdn.com/aliyun-help/help-portal-fe/0.9.44/css/index.css" rel="stylesheet">
+    <link href="//g.alicdn.com/hmod/ace-homepage-2020-hmod-footer/0.1.5/index.css" rel="stylesheet"/>
+    <link href="//g.alicdn.com/code/npm/@ali??hmod-ace-2023-box/0.1.0/index.css,hmod-ace-2023-service-contact-us/0.0.25/index.css,hmod-aliyun-com-floating-toolbar/0.1.6/index.css,hmod-aliyun-com-global-nav-search/0.5.15/index.css,hmod-aliyun-com-global-nav/0.1.31/index.css" rel="stylesheet"/>
+    <style>
+        .placeholder {
+            color: #ececec !important;
+            letter-spacing: 0 !important;
+        }
+    </style>
+</head>
+<body>
+<!-- 当前页面内容 -->
+<script src="oss_layout.js"></script>
+<script type="module" src="effect.js"></script>
+
+<!-- ================ AI总结助手配置开始 ================ -->
+<script>
+    // 页面总结按钮的disabled状态设置
+    const setPageSummarizeButton = (disabled) => {
+        const button = document.querySelector('.webChat-footer-extra-button');
+        if (button) {
+            button.disabled = disabled;
+        }
+    }
+    const defaultPrompt = '总结当前页面内容';
+    window.CHATBOT_CONFIG = {
+        //【修改点1】：请替换endpoint的值为 https://{前一步骤中获取的http触发器域名}/chat
+        // 例如：https://summaritant-******.cn-hangzhou.fcapp.run/chat
+        endpoint: '/chat',
+        feedBackConfig: {
+            like: {
+                hide: false, // 是否隐藏点赞: true表示隐藏
+                onClick: () => {
+                    console.log('点赞');
+                }
+            },
+            disLike: {
+                hide: false, // 是否隐藏点踩: true表示隐藏
+                onClick: () => {
+                    console.log('点踩');
+                }
+            }
+        },
+        dataProcessor: {
+            // 在向后端大模型应用发起请求前改写 Prompt。可用于总结内容场景，在发送前将内容包含在内，同时避免在前端显示这些内容
+            rewritePrompt(prompt) {
+                if (prompt === defaultPrompt ) {
+                    //【修改点2】：docContent代表当前页面的内容，请替换为合适的脚本以获取当前页面需要总结的内容
+                    const pageContentDom = document.getElementById('concept-ybr-fg1-tdb');
+                    return `请使用中文总结以下内容：\n\n------\n\n${pageContentDom?.outerText}`;
+                }
+                return prompt;
+            }
+        },
+        // 自定义取值参考：https://docs.nlkit.com/nlux/reference/ui/ai-chat
+        aiChatOptions: {
+            className: 'summarize-ai-chat',
+            personaOptions: {
+                assistant: {
+                    avatar: 'https://help-static-aliyun-doc.aliyuncs.com/demos/ai-assistant-logo.gif',
+                },
+                user: {
+                    avatar: 'https://oss.aliyuncs.com/aliyun_id_photo_bucket/default_handsome.jpg',
+                }
+            },
+            composerOptions: {
+                placeholder: '请将您遇到的问题告诉我', // 消息输入框提示
+                hideStopButton: true
+            },
+            events: {
+                messageSent: () => {
+                    setPageSummarizeButton(true); // 消息发送时将页面总结按钮置灰
+                },
+                messageReceived: () => {
+                    setPageSummarizeButton(false); // 消息接收完毕时重置页面总结按钮
+                }
+            },
+            conversationOptions: {
+                //【修改点3】：此列表为初始问题列表，请配置为合适的内容
+                conversationStarters: [
+                    {prompt: defaultPrompt},
+                    {prompt: '为什么说弹性是云的最大优势?'},
+                    {prompt: '为什么选择阿里云？'},
+                ],
+                layout: 'list',
+            },
+        },
+        customRenderOptions: {
+            // 欢迎页面配置: greetingOptions为空则使用默认欢迎页面
+            greetingOptions: {
+                greeting: '你好, 我是',
+                name: 'AI助手',
+                quickStartItemClick: ({api, item}) => {
+                    console.log('点击了快速入口');
+                    api?.composer && api.composer.send(item?.prompt);
+                }
+            },
+            // onInit AI助手初始化时执行
+            onInit: (params) => {
+                const { api } = params || {};
+                // 在对话框上方添加一个按钮（默认为页面总结按钮）
+                const extraButton = document.querySelector('.webChat-footer-extra');
+                const footer = document.querySelector('.nlux-composer-container');
+                if (!footer || extraButton) return;
+                const footerParent = footer.parentElement;
+
+                const newDiv = document.createElement('div');
+                newDiv.className = 'webChat-footer-extra';
+
+                const button = document.createElement('button');
+                button.innerHTML = '页面总结';
+                button.className = 'webChat-footer-extra-button';
+                button.onclick = () => {
+                    if (api?.composer) {
+                        api.composer.send(defaultPrompt);
+                    }
+                }
+                newDiv.appendChild(button);
+
+                footerParent && footerParent.insertBefore(newDiv, footer);
+
+                // 自定义AI总结助对话窗口顶部标题
+                const title = document.querySelector('.webchat-container-toolbar span');
+                if (title) {
+                    title.innerHTML = 'AI助手';
+                }
+            },
+            stopButtonClass: 'summarize-stop-button',
+            onChatbotRefresh: () => {
+                setPageSummarizeButton(false);
+            }
+        }
+    };
+</script>
+<link rel="stylesheet" crossorigin href="https://g.alicdn.com/aliyun-documentation/web-chatbot-ui/0.0.19/index.css" />
+<script type="module" crossorigin src="https://g.alicdn.com/aliyun-documentation/web-chatbot-ui/0.0.19/index.js"></script>
+<style>
+    /* AI总结助手打开的对话窗口顶部标题栏样式设置 */
+    :root {
+        --webchat-toolbar-background-color: #fff;
+        --webchat-toolbar-text-color: #333;
+    }
+    /* AI总结助手打开的对话窗口如果被遮挡或需调整显示位置，可以尝试调整以下 z-index、bottom、right等属性 */
+    .webchat-container {
+        z-index: 100;
+        bottom: 10px;
+        right: 10px;
+    }
+    /* AI总结助手的唤起图标如果被遮挡或需调整显示位置，可以尝试调整以下 z-index、bottom、right等属性 */
+    .webchat-bubble-tip {
+        z-index: 99;
+        bottom: 20px;
+        right: 20px;
+    }
+
+    /* AI 对话框顶部渐变色 */
+    .webchat-container-toolbar {
+        border-bottom: none !important;
+        &::before {
+            content: "";
+            border-style: solid;
+            border-width: 5px 0 0;
+            border-image: linear-gradient(270deg, #eb8698, #1366ec) 1;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+        }
+    }
+    .summarize-ai-chat {
+        /* 调整内容区域高度 */
+        .nlux-launchPad-container,
+        .nlux-conversation-container {
+            height: calc(100% - 120px) !important;
+        }
+        /* 底部消息框布局调整 */
+        .nlux-composer-container {
+            box-sizing: content-box;
+            width: unset !important;
+            padding: 6px 16px 16px;
+            border-top: none !important;
+            & > div {
+                border: 1px solid #DEE0E5;
+                border-radius: 2px;
+            }
+        }
+        /* 消息列表布局调整-list展示调整 */
+        .nlux-comp-chatItem.nlux-comp-chatItem--listLayout {
+            flex-direction: row !important;
+            .nlux-comp-chatItem-participantName {
+                display: none;
+            }
+            .nlux-comp-message.nlux_msg_sent,
+            .nlux-comp-message.nlux_msg_received {
+                margin-left: 0 !important;
+            }
+        }
+        .nlux-comp-chatItem.nlux-comp-chatItem--sent.nlux-comp-chatItem--listLayout {
+            margin-bottom: 1.5em;
+            .nlux-comp-message.nlux_msg_sent {
+                background-color: #e5effe;
+                justify-content: center;
+                padding: 10px;
+                flex: unset !important;
+            }
+        }
+        /* 页面总结按钮 */
+        .webChat-footer-extra {
+            height: 30px;
+            padding-left: 16px;
+            .webChat-footer-extra-button {
+                display: inline-block;
+                padding: 4px;
+                font-size: 12px;
+                border: 1px solid #DEE0E5;
+                border-radius: 2px;
+                background-color: #fff;
+            }
+            .webChat-footer-extra-button:hover {
+                cursor: pointer;
+                background: linear-gradient(61deg, rgba(229, 239, 254, .5) -24%, rgba(238, 235, 255, .5) 127%);
+            }
+            .webChat-footer-extra-button[disabled] {
+                background-color: #ececec;
+                cursor: not-allowed;
+                opacity: 0.4;
+            }
+        }
+        /* 发送按钮样式 */
+        .nlux-comp-sendIcon {
+            max-width: 28px !important;
+            width: 28px;
+            height: 28px;
+            line-height: 28px;
+            border-radius: 2px;
+            background-color: #1366ec;
+        }
+        .nlux-comp-composer>button>.nlux-comp-sendIcon>.nlux-comp-sendIcon-container {
+            mask: unset !important;
+            background-color: unset;
+            background-image: url('https://img.alicdn.com/imgextra/i3/O1CN01ZGAB0T1u6YYQ2sR8b_!!6000000005988-55-tps-13-13.svg');
+            background-size: 12px;
+            background-position: center;
+        }
+        .nlux-comp-composer>button[disabled]>.nlux-comp-sendIcon {
+            opacity: 0.4;
+        }
+    }
+    /* 终止按钮 */
+    .summarize-stop-button {
+        bottom: 18px !important;
+        right: 16px !important;
+    }
+</style>
+<!-- ================ AI总结助手配置结束 ================ -->
+</body>
+</html>
