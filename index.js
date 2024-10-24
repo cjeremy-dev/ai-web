@@ -3,7 +3,6 @@ const bodyParser = require('body-parser');
 const https = require('https');
 const app = express();
 
-
 // 如果用于生产环境，建议通过 CORS 限制仅允许你的域名访问
 const cors = require('cors');
 const corsOptions = {
